@@ -53,13 +53,30 @@ export function getUserName(): string {
 }
 
 export function sendDataToBot(data: object): void {
+    console.log('[sendDataToBot] Attempting to send:', data);
     const webApp = getTelegramWebApp();
+
     if (webApp) {
-        webApp.sendData(JSON.stringify(data));
+        console.log('[sendDataToBot] Telegram WebApp found!');
+        console.log('[sendDataToBot] WebApp version:', webApp.version);
+        console.log('[sendDataToBot] Is expanded:', webApp.isExpanded);
+
+        try {
+            const jsonData = JSON.stringify(data);
+            console.log('[sendDataToBot] Sending JSON:', jsonData);
+            webApp.sendData(jsonData);
+            console.log('[sendDataToBot] ✅ sendData() called successfully!');
+        } catch (error) {
+            console.error('[sendDataToBot] ❌ Error:', error);
+            alert(`Error sending data: ${error}`);
+        }
     } else {
-        console.log('[Dev Mode] Would send to bot:', data);
+        console.warn('[sendDataToBot] ⚠️ Telegram WebApp NOT available');
+        console.log('[sendDataToBot] window.Telegram:', window.Telegram);
+        alert('⚠️ Telegram WebApp not available. Please open from Telegram app.');
     }
 }
+
 
 export function closeApp(): void {
     const webApp = getTelegramWebApp();
