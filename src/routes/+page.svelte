@@ -44,6 +44,8 @@
     function handleAction(side: "buy" | "sell" | "both") {
         if (!selectedCustomer) return;
 
+        alert(`🔔 Button clicked: ${side.toUpperCase()} for ${selectedCustomer}`);
+
         hapticFeedback("medium");
         addRecentCustomer(selectedCustomer);
 
