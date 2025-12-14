@@ -74,10 +74,33 @@
     }
 
     function formatNumber(value: string): string {
-        const num = value.replace(/[^0-9.]/g, "");
+        // Allow only digits and dots
+        let num = value.replace(/[^0-9.]/g, "");
+
+        // Prevent multiple dots: keep only the first one
         const parts = num.split(".");
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        return parts.join(".");
+        if (parts.length > 2) {
+            num = parts[0] + "." + parts.slice(1).join("");
+        }
+
+        const partsFormatted = num.split(".");
+        partsFormatted[0] = partsFormatted[0].replace(
+            /\B(?=(\d{3})+(?!\d))/g,
+            ",",
+        );
+        return partsFormatted.join(".");
+    }
+
+    function formatDecimal(value: string): string {
+        // Allow only digits and dots
+        let num = value.replace(/[^0-9.]/g, "");
+
+        // Prevent multiple dots
+        const parts = num.split(".");
+        if (parts.length > 2) {
+            num = parts[0] + "." + parts.slice(1).join("");
+        }
+        return num;
     }
 
     function handleAmountInput(e: Event) {
@@ -87,7 +110,11 @@
 
     function handleRateInput(e: Event) {
         const input = e.target as HTMLInputElement;
-        rate = input.value;
+        rate = formatDecimal(input.value);
+    }
+    function handleCancel() {
+        hapticFeedback("medium");
+        goto("/");
     }
 </script>
 
@@ -258,6 +285,14 @@
             {:else}
                 ✅ Submit
             {/if}
+        </button>
+
+        <button
+            class="cancel-btn"
+            on:click={handleCancel}
+            disabled={isSubmitting}
+        >
+            ❌ Cancel
         </button>
     </div>
 </div>
@@ -476,6 +511,9 @@
 
     .submit-section {
         margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
 
     .submit-btn {
@@ -509,6 +547,32 @@
         opacity: 0.5;
         cursor: not-allowed;
         transform: none;
+    }
+
+    .cancel-btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #4b5563;
+        background: #f3f4f6;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .cancel-btn:hover:not(:disabled) {
+        background: #e5e7eb;
+        color: #1f2937;
+    }
+
+    .cancel-btn:active:not(:disabled) {
+        transform: scale(0.98);
     }
 
     .spinner {
