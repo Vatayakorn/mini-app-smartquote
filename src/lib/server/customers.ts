@@ -1,7 +1,31 @@
-import { CUSTOMER_API_URL, CUSTOMER_API_KEY } from '$env/static/private';
+import { CUSTOMER_API_URL, CUSTOMER_API_KEY, HIDDEN_CUSTOMERS } from '$env/static/private';
 
 export interface Customer {
     name: string;
+}
+
+/**
+ * Get set of hidden customer names (lowercase) from env
+ */
+function getHiddenCustomersSet(): Set<string> {
+    if (!HIDDEN_CUSTOMERS) return new Set();
+    return new Set(
+        HIDDEN_CUSTOMERS.split(',')
+            .map(name => name.trim().toLowerCase())
+            .filter(Boolean)
+    );
+}
+
+/**
+ * Filter out hidden customers from the list
+ */
+function filterHiddenCustomers(names: string[]): string[] {
+    const hiddenSet = getHiddenCustomersSet();
+    if (hiddenSet.size === 0) return names;
+
+    const filtered = names.filter(name => !hiddenSet.has(name.toLowerCase()));
+    console.log(`[Customers] Filtered out ${names.length - filtered.length} hidden customer(s)`);
+    return filtered;
 }
 
 /**
@@ -14,7 +38,7 @@ export async function fetchCustomers(): Promise<string[]> {
     // If no API key configured, use mock data
     if (!CUSTOMER_API_KEY) {
         console.log('[Customers] No CUSTOMER_API_KEY configured, using mock data');
-        return getMockCustomers();
+        return filterHiddenCustomers(getMockCustomers());
     }
 
     try {
@@ -30,16 +54,16 @@ export async function fetchCustomers(): Promise<string[]> {
 
         if (!response.ok) {
             console.error(`Failed to fetch customers: ${response.status}`);
-            return getMockCustomers();
+            return filterHiddenCustomers(getMockCustomers());
         }
 
         const data = await response.json();
         const names = extractNames(data);
         console.log('[Customers] Fetched', names.length, 'customers');
-        return names;
+        return filterHiddenCustomers(names);
     } catch (error) {
         console.error('Error fetching customers:', error);
-        return getMockCustomers();
+        return filterHiddenCustomers(getMockCustomers());
     }
 }
 
