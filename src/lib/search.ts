@@ -67,3 +67,58 @@ export function clearRecentCustomers(): void {
         // ignore
     }
 }
+
+// Favorite customers storage
+const FAVORITES_KEY = 'btz_favorite_customers';
+
+export function getFavoriteCustomers(): string[] {
+    if (typeof window === 'undefined') return [];
+    try {
+        const stored = localStorage.getItem(FAVORITES_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+export function addFavoriteCustomer(name: string): void {
+    if (typeof window === 'undefined') return;
+    try {
+        let favorites = getFavoriteCustomers();
+        if (!favorites.some(n => n.toLowerCase() === name.toLowerCase())) {
+            favorites.push(name);
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+        }
+    } catch {
+        // ignore storage errors
+    }
+}
+
+export function removeFavoriteCustomer(name: string): void {
+    if (typeof window === 'undefined') return;
+    try {
+        let favorites = getFavoriteCustomers();
+        favorites = favorites.filter(n => n.toLowerCase() !== name.toLowerCase());
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    } catch {
+        // ignore storage errors
+    }
+}
+
+export function toggleFavoriteCustomer(name: string): boolean {
+    if (typeof window === 'undefined') return false;
+    const favorites = getFavoriteCustomers();
+    const isFavorite = favorites.some(n => n.toLowerCase() === name.toLowerCase());
+    if (isFavorite) {
+        removeFavoriteCustomer(name);
+        return false;
+    } else {
+        addFavoriteCustomer(name);
+        return true;
+    }
+}
+
+export function isFavoriteCustomer(name: string): boolean {
+    const favorites = getFavoriteCustomers();
+    return favorites.some(n => n.toLowerCase() === name.toLowerCase());
+}

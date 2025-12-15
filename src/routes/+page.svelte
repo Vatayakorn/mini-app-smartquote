@@ -4,6 +4,8 @@
         searchCustomers,
         getRecentCustomers,
         addRecentCustomer,
+        getFavoriteCustomers,
+        toggleFavoriteCustomer,
     } from "$lib/search";
     import { sendRateRequest } from "$lib/api";
     import { getUserId, hapticFeedback } from "$lib/telegram";
@@ -21,7 +23,9 @@
     let searchQuery = "";
     let selectedCustomer: string | null = null;
     let recentCustomers: string[] = [];
+    let favoriteCustomers: string[] = [];
     let filteredCustomers: string[] = [];
+    let favoritesSet: Set<string> = new Set();
 
     $: customers = data.customers || [];
     $: hiddenCustomersSet = new Set(
@@ -36,17 +40,37 @@
         }
     }
 
+    function refreshFavorites() {
+        const allFavorites = getFavoriteCustomers();
+        favoriteCustomers = allFavorites.filter(
+            (name) => !hiddenCustomersSet.has(name.toLowerCase()),
+        );
+        favoritesSet = new Set(favoriteCustomers.map((n) => n.toLowerCase()));
+    }
+
     onMount(() => {
         // Filter recent customers to exclude hidden ones
         const allRecent = getRecentCustomers();
         recentCustomers = allRecent.filter(
             (name) => !hiddenCustomersSet.has(name.toLowerCase()),
         );
+        refreshFavorites();
     });
 
     function selectCustomer(name: string) {
         selectedCustomer = name;
         hapticFeedback("selection");
+    }
+
+    function handleToggleFavorite(e: Event, name: string) {
+        e.stopPropagation();
+        toggleFavoriteCustomer(name);
+        refreshFavorites();
+        hapticFeedback("light");
+    }
+
+    function isFavorite(name: string): boolean {
+        return favoritesSet.has(name.toLowerCase());
     }
 
     async function handleAction(side: "buy" | "sell" | "both") {
@@ -150,6 +174,50 @@
         </div>
     {/if}
 
+    <!-- Favorite Customers -->
+    {#if favoriteCustomers.length > 0 && !searchQuery}
+        <Card.Root class="mb-4 border-yellow-500/30 bg-yellow-500/5">
+            <Card.Header class="pb-2">
+                <Card.Title
+                    class="text-sm font-medium text-muted-foreground flex items-center gap-2"
+                >
+                    <span>⭐</span>
+                    <span>Favorites</span>
+                    <Badge variant="outline" class="ml-auto"
+                        >{favoriteCustomers.length}</Badge
+                    >
+                </Card.Title>
+            </Card.Header>
+            <Card.Content class="pt-0">
+                <div class="space-y-1">
+                    {#each favoriteCustomers as customer}
+                        <div class="flex items-center gap-1">
+                            <button
+                                class="flex-1 flex items-center justify-between p-3 rounded-lg transition-all
+                                       hover:bg-accent
+                                       {selectedCustomer === customer
+                                    ? 'bg-primary/10 border border-primary/30'
+                                    : 'bg-secondary/50'}"
+                                onclick={() => selectCustomer(customer)}
+                            >
+                                <span class="text-sm">{customer}</span>
+                                <span class="text-muted-foreground">›</span>
+                            </button>
+                            <button
+                                class="p-2 rounded-lg hover:bg-accent transition-all text-yellow-500"
+                                onclick={(e) =>
+                                    handleToggleFavorite(e, customer)}
+                                title="Remove from favorites"
+                            >
+                                ★
+                            </button>
+                        </div>
+                    {/each}
+                </div>
+            </Card.Content>
+        </Card.Root>
+    {/if}
+
     <!-- Recent Customers -->
     {#if recentCustomers.length > 0 && !searchQuery}
         <Card.Root class="mb-4">
@@ -164,17 +232,33 @@
             <Card.Content class="pt-0">
                 <div class="space-y-1">
                     {#each recentCustomers as customer}
-                        <button
-                            class="w-full flex items-center justify-between p-3 rounded-lg transition-all
-                                   hover:bg-accent
-                                   {selectedCustomer === customer
-                                ? 'bg-primary/10 border border-primary/30'
-                                : 'bg-secondary/50'}"
-                            onclick={() => selectCustomer(customer)}
-                        >
-                            <span class="text-sm">{customer}</span>
-                            <span class="text-muted-foreground">›</span>
-                        </button>
+                        <div class="flex items-center gap-1">
+                            <button
+                                class="flex-1 flex items-center justify-between p-3 rounded-lg transition-all
+                                       hover:bg-accent
+                                       {selectedCustomer === customer
+                                    ? 'bg-primary/10 border border-primary/30'
+                                    : 'bg-secondary/50'}"
+                                onclick={() => selectCustomer(customer)}
+                            >
+                                <span class="text-sm">{customer}</span>
+                                <span class="text-muted-foreground">›</span>
+                            </button>
+                            <button
+                                class="p-2 rounded-lg hover:bg-accent transition-all {isFavorite(
+                                    customer,
+                                )
+                                    ? 'text-yellow-500'
+                                    : 'text-muted-foreground hover:text-yellow-500'}"
+                                onclick={(e) =>
+                                    handleToggleFavorite(e, customer)}
+                                title={isFavorite(customer)
+                                    ? "Remove from favorites"
+                                    : "Add to favorites"}
+                            >
+                                {isFavorite(customer) ? "★" : "☆"}
+                            </button>
+                        </div>
                     {/each}
                 </div>
             </Card.Content>
@@ -203,17 +287,33 @@
                 {:else}
                     <div class="space-y-1 pr-4">
                         {#each filteredCustomers as customer}
-                            <button
-                                class="w-full flex items-center justify-between p-3 rounded-lg transition-all
-                                       hover:bg-accent active:scale-[0.98]
-                                       {selectedCustomer === customer
-                                    ? 'bg-primary/10 border border-primary/30'
-                                    : 'bg-secondary/50'}"
-                                onclick={() => selectCustomer(customer)}
-                            >
-                                <span class="text-sm">{customer}</span>
-                                <span class="text-muted-foreground">›</span>
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <button
+                                    class="flex-1 flex items-center justify-between p-3 rounded-lg transition-all
+                                           hover:bg-accent active:scale-[0.98]
+                                           {selectedCustomer === customer
+                                        ? 'bg-primary/10 border border-primary/30'
+                                        : 'bg-secondary/50'}"
+                                    onclick={() => selectCustomer(customer)}
+                                >
+                                    <span class="text-sm">{customer}</span>
+                                    <span class="text-muted-foreground">›</span>
+                                </button>
+                                <button
+                                    class="p-2 rounded-lg hover:bg-accent transition-all {isFavorite(
+                                        customer,
+                                    )
+                                        ? 'text-yellow-500'
+                                        : 'text-muted-foreground hover:text-yellow-500'}"
+                                    onclick={(e) =>
+                                        handleToggleFavorite(e, customer)}
+                                    title={isFavorite(customer)
+                                        ? "Remove from favorites"
+                                        : "Add to favorites"}
+                                >
+                                    {isFavorite(customer) ? "★" : "☆"}
+                                </button>
+                            </div>
                         {/each}
                     </div>
                 {/if}
