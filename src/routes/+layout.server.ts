@@ -1,7 +1,8 @@
 import type { LayoutServerLoad } from './$types';
-import { fetchCustomers } from '$lib/server/customers';
+import { fetchCustomers, getHiddenCustomers } from '$lib/server/customers';
 
 export const load: LayoutServerLoad = async () => {
     const customers = await fetchCustomers();
-    return { customers };
+    const hiddenCustomers = getHiddenCustomers();
+    return { customers, hiddenCustomers };
 };

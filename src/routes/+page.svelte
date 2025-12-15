@@ -24,6 +24,9 @@
     let filteredCustomers: string[] = [];
 
     $: customers = data.customers || [];
+    $: hiddenCustomersSet = new Set(
+        (data.hiddenCustomers || []).map((s: string) => s.toLowerCase()),
+    );
 
     $: {
         if (searchQuery) {
@@ -34,7 +37,11 @@
     }
 
     onMount(() => {
-        recentCustomers = getRecentCustomers();
+        // Filter recent customers to exclude hidden ones
+        const allRecent = getRecentCustomers();
+        recentCustomers = allRecent.filter(
+            (name) => !hiddenCustomersSet.has(name.toLowerCase()),
+        );
     });
 
     function selectCustomer(name: string) {

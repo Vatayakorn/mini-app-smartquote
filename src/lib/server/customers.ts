@@ -17,6 +17,16 @@ function getHiddenCustomersSet(): Set<string> {
 }
 
 /**
+ * Get array of hidden customer names (lowercase) for client-side filtering
+ */
+export function getHiddenCustomers(): string[] {
+    if (!HIDDEN_CUSTOMERS) return [];
+    return HIDDEN_CUSTOMERS.split(',')
+        .map(name => name.trim().toLowerCase())
+        .filter(Boolean);
+}
+
+/**
  * Filter out hidden customers from the list
  */
 function filterHiddenCustomers(names: string[]): string[] {
